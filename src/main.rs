@@ -123,12 +123,13 @@ fn timer_execute<F>(func: F, sleep_seconds: u64) -> Result<(), String>
 where
     F: std::ops::Fn() -> Result<(), String>,
 {
-    let mut instant = Instant::now();
+    let mut instant = Instant::now() - Duration::from_secs(sleep_seconds);
+    let diff_duration = Duration::from_secs(sleep_seconds * 2);
     let mut duration: Duration;
     loop {
         func()?;
         let newer_instant = Instant::now();
-        duration = Duration::from_secs(sleep_seconds) - (newer_instant - instant);
+        duration = diff_duration - (newer_instant - instant);
         instant = newer_instant;
         sleep(duration);
     }
