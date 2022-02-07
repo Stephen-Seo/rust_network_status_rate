@@ -12,6 +12,12 @@ const INTERVAL_SECONDS: u64 = 5;
 #[derive(StructOpt, Debug, Clone)]
 struct Opt {
     net_dev: String,
+    #[structopt(
+        short = "s",
+        long = "disable-scaling",
+        help = "Disables byte scaling into interval files"
+    )]
+    disable_byte_scaling: bool,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -129,6 +135,7 @@ fn write_compare_state(
 
 fn do_set_states(
     net_device: &str,
+    disable_byte_scalaing: bool,
     send_interval_filename: &Path,
     recv_interval_filename: &Path,
     send_total_filename: &Path,
@@ -136,19 +143,74 @@ fn do_set_states(
 ) -> Result<(), String> {
     let state = write_compare_state(net_device, send_total_filename, recv_total_filename)?;
 
-    {
-        let mut send_interval_file = File::create(send_interval_filename)
-            .map_err(|_| format!("Failed to create \"{:?}\"", send_interval_filename))?;
-        send_interval_file
-            .write_all(state.send.to_string().as_bytes())
-            .map_err(|_| format!("Failed to write into \"{:?}\"", send_interval_filename))?;
-    }
-    {
-        let mut recv_interval_file = File::create(recv_interval_filename)
-            .map_err(|_| format!("Failed to create \"{:?}\"", recv_interval_filename))?;
-        recv_interval_file
-            .write_all(state.recv.to_string().as_bytes())
-            .map_err(|_| format!("Failed to write into \"{:?}\"", recv_interval_filename))?;
+    if disable_byte_scalaing {
+        {
+            let mut send_interval_file = File::create(send_interval_filename)
+                .map_err(|_| format!("Failed to create \"{:?}\"", send_interval_filename))?;
+            send_interval_file
+                .write_all(state.send.to_string().as_bytes())
+                .map_err(|_| format!("Failed to write into \"{:?}\"", send_interval_filename))?;
+        }
+        {
+            let mut recv_interval_file = File::create(recv_interval_filename)
+                .map_err(|_| format!("Failed to create \"{:?}\"", recv_interval_filename))?;
+            recv_interval_file
+                .write_all(state.recv.to_string().as_bytes())
+                .map_err(|_| format!("Failed to write into \"{:?}\"", recv_interval_filename))?;
+        }
+    } else {
+        {
+            let mut send_string = String::new();
+            if state.send > 1024 * 1024 {
+                send_string.push_str(&(state.send as f64 / 1024.0 / 1024.0).to_string());
+                let decimal_location_opt = send_string.find('.');
+                if let Some(location) = decimal_location_opt {
+                    send_string.truncate(location + 2);
+                }
+                send_string.push_str("MB");
+            } else if state.send > 1024 {
+                send_string.push_str(&(state.send as f64 / 1024.0).to_string());
+                let decimal_location_opt = send_string.find('.');
+                if let Some(location) = decimal_location_opt {
+                    send_string.truncate(location + 2);
+                }
+                send_string.push_str("KB");
+            } else {
+                send_string.push_str(&state.send.to_string());
+                send_string.push_str("B");
+            }
+            let mut send_interval_file = File::create(send_interval_filename)
+                .map_err(|_| format!("Failed to create \"{:?}\"", send_interval_filename))?;
+            send_interval_file
+                .write_all(send_string.as_bytes())
+                .map_err(|_| format!("Failed to write into \"{:?}\"", send_interval_filename))?;
+        }
+        {
+            let mut recv_string = String::new();
+            if state.recv > 1024 * 1024 {
+                recv_string.push_str(&(state.recv as f64 / 1024.0 / 1024.0).to_string());
+                let decimal_location_opt = recv_string.find('.');
+                if let Some(location) = decimal_location_opt {
+                    recv_string.truncate(location + 2);
+                }
+                recv_string.push_str("MB");
+            } else if state.recv > 1024 {
+                recv_string.push_str(&(state.recv as f64 / 1024.0).to_string());
+                let decimal_location_opt = recv_string.find('.');
+                if let Some(location) = decimal_location_opt {
+                    recv_string.truncate(location + 2);
+                }
+                recv_string.push_str("KB");
+            } else {
+                recv_string.push_str(&state.recv.to_string());
+                recv_string.push_str("B");
+            }
+            let mut recv_interval_file = File::create(recv_interval_filename)
+                .map_err(|_| format!("Failed to create \"{:?}\"", recv_interval_filename))?;
+            recv_interval_file
+                .write_all(recv_string.as_bytes())
+                .map_err(|_| format!("Failed to write into \"{:?}\"", recv_interval_filename))?;
+        }
     }
 
     Ok(())
@@ -201,6 +263,7 @@ fn main() -> Result<(), String> {
         move || {
             do_set_states(
                 &opt.net_dev,
+                opt.disable_byte_scaling,
                 &send_interval_path,
                 &recv_interval_path,
                 &send_total_path,
