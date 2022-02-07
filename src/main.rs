@@ -50,19 +50,17 @@ fn read_proc_net_dev(net_device: &str) -> Result<ByteState, String> {
 
     for line in file_string.lines() {
         if line.trim().starts_with(net_device) {
-            let mut count = 0u32;
-            for word in line.split_ascii_whitespace() {
+            for (count, word) in line.split_ascii_whitespace().enumerate() {
                 if count == 1 {
-                    byte_state.recv = u64::from_str_radix(word, 10).map_err(|_| {
+                    byte_state.recv = word.parse::<u64>().map_err(|_| {
                         String::from("Failed to parse recv bytes from \"/proc/net/dev\"")
                     })?;
                 } else if count == 9 {
-                    byte_state.send = u64::from_str_radix(word, 10).map_err(|_| {
+                    byte_state.send = word.parse::<u64>().map_err(|_| {
                         String::from("Failed to parse send bytes from \"/proc/net/dev\"")
                     })?;
                     return Ok(byte_state);
                 }
-                count += 1;
             }
             return Err(String::from(
                 "Failed to parse from \"/proc/net/dev\", too few words?",
@@ -87,7 +85,7 @@ fn write_compare_state(
         if let Ok(mut send_file) = send_file_open_result {
             let read_result = send_file.read_to_string(&mut temp_string);
             if read_result.is_ok() {
-                let int_parse_result = u64::from_str_radix(temp_string.trim(), 10);
+                let int_parse_result = temp_string.trim().parse::<u64>();
                 if let Ok(i) = int_parse_result {
                     prev_byte_state.send = i;
                 }
@@ -100,7 +98,7 @@ fn write_compare_state(
         if let Ok(mut recv_file) = recv_file_open_result {
             let read_result = recv_file.read_to_string(&mut temp_string);
             if read_result.is_ok() {
-                let int_parse_result = u64::from_str_radix(temp_string.trim(), 10);
+                let int_parse_result = temp_string.trim().parse::<u64>();
                 if let Ok(i) = int_parse_result {
                     prev_byte_state.recv = i;
                 }
