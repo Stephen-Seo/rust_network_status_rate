@@ -9,6 +9,14 @@ use structopt::StructOpt;
 
 const INTERVAL_SECONDS: u64 = 5;
 
+const USE_XDG_RUNTIME_DIR: bool = true;
+const ALTERNATE_PREFIX_DIR: &str = "/tmp";
+
+const SEND_TOTAL_FILENAME: &str = "rust_send_total";
+const RECV_TOTAL_FILENAME: &str = "rust_recv_total";
+const SEND_INTERVAL_FILENAME: &str = "rust_send_interval";
+const RECV_INTERVAL_FILENAME: &str = "rust_recv_interval";
+
 #[derive(StructOpt, Debug, Clone)]
 struct Opt {
     net_dev: String,
@@ -177,7 +185,7 @@ fn do_set_states(
                 send_string.push_str("KB");
             } else {
                 send_string.push_str(&state.send.to_string());
-                send_string.push_str("B");
+                send_string.push('B');
             }
             let mut send_interval_file = File::create(send_interval_filename)
                 .map_err(|_| format!("Failed to create \"{:?}\"", send_interval_filename))?;
@@ -203,7 +211,7 @@ fn do_set_states(
                 recv_string.push_str("KB");
             } else {
                 recv_string.push_str(&state.recv.to_string());
-                recv_string.push_str("B");
+                recv_string.push('B');
             }
             let mut recv_interval_file = File::create(recv_interval_filename)
                 .map_err(|_| format!("Failed to create \"{:?}\"", recv_interval_filename))?;
@@ -237,26 +245,31 @@ fn main() -> Result<(), String> {
 
     println!("Using net_dev == \"{}\"", opt.net_dev);
 
-    let xdg_runtime_dir = var("XDG_RUNTIME_DIR").map_err(|e| format!("{}", e))?;
+    let prefix_dir: String;
+    if USE_XDG_RUNTIME_DIR {
+        prefix_dir = var("XDG_RUNTIME_DIR").map_err(|e| format!("{}", e))?;
+    } else {
+        prefix_dir = ALTERNATE_PREFIX_DIR.to_string();
+    }
 
     let mut send_total_path = PathBuf::new();
-    send_total_path.push(&xdg_runtime_dir);
-    send_total_path.push("rust_send_total");
+    send_total_path.push(&prefix_dir);
+    send_total_path.push(SEND_TOTAL_FILENAME);
     let send_total_path = send_total_path;
 
     let mut recv_total_path = PathBuf::new();
-    recv_total_path.push(&xdg_runtime_dir);
-    recv_total_path.push("rust_recv_total");
+    recv_total_path.push(&prefix_dir);
+    recv_total_path.push(RECV_TOTAL_FILENAME);
     let recv_total_path = recv_total_path;
 
     let mut send_interval_path = PathBuf::new();
-    send_interval_path.push(&xdg_runtime_dir);
-    send_interval_path.push("rust_send_interval");
+    send_interval_path.push(&prefix_dir);
+    send_interval_path.push(SEND_INTERVAL_FILENAME);
     let send_interval_path = send_interval_path;
 
     let mut recv_interval_path = PathBuf::new();
-    recv_interval_path.push(&xdg_runtime_dir);
-    recv_interval_path.push("rust_recv_interval");
+    recv_interval_path.push(&prefix_dir);
+    recv_interval_path.push(RECV_INTERVAL_FILENAME);
     let recv_interval_path = recv_interval_path;
 
     timer_execute(
