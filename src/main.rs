@@ -287,9 +287,9 @@ fn main() -> Result<(), String> {
 
     let prefix_dir: String;
     if opt.enable_alternate_prefix {
-        prefix_dir = var("XDG_RUNTIME_DIR").map_err(|e| format!("{}", e))?;
-    } else {
         prefix_dir = opt.alternate_prefix_dir.clone();
+    } else {
+        prefix_dir = var("XDG_RUNTIME_DIR").map_err(|e| format!("{}", e))?;
     }
 
     let mut send_total_path = PathBuf::new();
