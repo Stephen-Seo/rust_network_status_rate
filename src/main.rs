@@ -290,6 +290,7 @@ fn main() -> Result<(), String> {
         prefix_dir = opt.alternate_prefix_dir.clone();
     } else {
         prefix_dir = var("XDG_RUNTIME_DIR").map_err(|e| format!("{}", e))?;
+        assert!(!prefix_dir.is_empty(), "XDG_RUNTIME_DIR is not set");
     }
 
     let mut send_total_path = PathBuf::new();
