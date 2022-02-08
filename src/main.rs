@@ -16,6 +16,8 @@ const DEFAULT_RECV_TOTAL_FILENAME: &str = "rust_recv_total";
 const DEFAULT_SEND_INTERVAL_FILENAME: &str = "rust_send_interval";
 const DEFAULT_RECV_INTERVAL_FILENAME: &str = "rust_recv_interval";
 
+const DEFAULT_PID_FILENAME: &str = "rust_network_rate_pid";
+
 #[derive(StructOpt, Debug, Clone)]
 struct Opt {
     net_dev: String,
@@ -66,6 +68,14 @@ struct Opt {
         default_value = DEFAULT_RECV_INTERVAL_FILENAME
     )]
     recv_interval_filename: String,
+
+    #[structopt(
+        short = "i",
+        long = "pid-filename",
+        help = "Filename to write pid to",
+        default_value = DEFAULT_PID_FILENAME
+    )]
+    pid_filename: String,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -280,6 +290,17 @@ where
     }
 }
 
+fn get_pid() -> Result<String, String> {
+    let path = std::fs::read_link("/proc/self")
+        .map_err(|e| format!("Failed to get path \"/proc/self\", {}", e))?;
+    let name = path
+        .file_name()
+        .ok_or_else(|| String::from("Failed to get file_name of \"/proc/self\""))?
+        .to_str()
+        .ok_or_else(|| String::from("Failed to get str of file_name of \"/proc/self\""))?;
+    Ok(name.to_string())
+}
+
 fn main() -> Result<(), String> {
     let opt = Opt::from_args();
 
@@ -291,6 +312,18 @@ fn main() -> Result<(), String> {
     } else {
         prefix_dir = var("XDG_RUNTIME_DIR").map_err(|e| format!("{}", e))?;
         assert!(!prefix_dir.is_empty(), "XDG_RUNTIME_DIR is not set");
+    }
+
+    {
+        let pid = get_pid()?;
+        let mut pid_pathbuf = PathBuf::new();
+        pid_pathbuf.push(&prefix_dir);
+        pid_pathbuf.push(opt.pid_filename);
+        let mut pid_file =
+            File::create(&pid_pathbuf).map_err(|_| format!("Failed to open {:?}", &pid_pathbuf))?;
+        pid_file
+            .write_all(pid.as_bytes())
+            .map_err(|_| format!("Failed to write into {:?}", &pid_pathbuf))?;
     }
 
     let mut send_total_path = PathBuf::new();
