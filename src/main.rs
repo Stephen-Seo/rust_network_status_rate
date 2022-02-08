@@ -9,13 +9,12 @@ use structopt::StructOpt;
 
 const INTERVAL_SECONDS: u64 = 5;
 
-const USE_XDG_RUNTIME_DIR: bool = true;
 const ALTERNATE_PREFIX_DIR: &str = "/tmp";
 
-const SEND_TOTAL_FILENAME: &str = "rust_send_total";
-const RECV_TOTAL_FILENAME: &str = "rust_recv_total";
-const SEND_INTERVAL_FILENAME: &str = "rust_send_interval";
-const RECV_INTERVAL_FILENAME: &str = "rust_recv_interval";
+const DEFAULT_SEND_TOTAL_FILENAME: &str = "rust_send_total";
+const DEFAULT_RECV_TOTAL_FILENAME: &str = "rust_recv_total";
+const DEFAULT_SEND_INTERVAL_FILENAME: &str = "rust_send_interval";
+const DEFAULT_RECV_INTERVAL_FILENAME: &str = "rust_recv_interval";
 
 #[derive(StructOpt, Debug, Clone)]
 struct Opt {
@@ -26,6 +25,47 @@ struct Opt {
         help = "Disables byte scaling into interval files"
     )]
     disable_byte_scaling: bool,
+    #[structopt(
+        short = "e",
+        long = "enable-alt-prefix",
+        help = "Enable use of alternate prefix instead of XDG_RUNTIME_DIR"
+    )]
+    enable_alternate_prefix: bool,
+    #[structopt(
+        short = "p",
+        long = "prefix",
+        help = "Prefix to use instead of XDG_RUNTIME_DIR if enabled",
+        default_value = ALTERNATE_PREFIX_DIR
+    )]
+    alternate_prefix_dir: String,
+    #[structopt(
+        short = "u",
+        long = "send-total",
+        help = "Filename of total bytes sent (in prefix dir)",
+        default_value = DEFAULT_SEND_TOTAL_FILENAME
+    )]
+    send_total_filename: String,
+    #[structopt(
+        short = "d",
+        long = "recv-total",
+        help = "Filename of total bytes received (in prefix dir)",
+        default_value = DEFAULT_RECV_TOTAL_FILENAME
+    )]
+    recv_total_filename: String,
+    #[structopt(
+        short = "s",
+        long = "send-interval",
+        help = "Filename of interval bytes sent (in prefix dir)",
+        default_value = DEFAULT_SEND_INTERVAL_FILENAME
+    )]
+    send_interval_filename: String,
+    #[structopt(
+        short = "r",
+        long = "recv-interval",
+        help = "Filename of interval bytes recieved (in prefix dir)",
+        default_value = DEFAULT_RECV_INTERVAL_FILENAME
+    )]
+    recv_interval_filename: String,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -246,30 +286,30 @@ fn main() -> Result<(), String> {
     println!("Using net_dev == \"{}\"", opt.net_dev);
 
     let prefix_dir: String;
-    if USE_XDG_RUNTIME_DIR {
+    if opt.enable_alternate_prefix {
         prefix_dir = var("XDG_RUNTIME_DIR").map_err(|e| format!("{}", e))?;
     } else {
-        prefix_dir = ALTERNATE_PREFIX_DIR.to_string();
+        prefix_dir = opt.alternate_prefix_dir.clone();
     }
 
     let mut send_total_path = PathBuf::new();
     send_total_path.push(&prefix_dir);
-    send_total_path.push(SEND_TOTAL_FILENAME);
+    send_total_path.push(opt.send_total_filename);
     let send_total_path = send_total_path;
 
     let mut recv_total_path = PathBuf::new();
     recv_total_path.push(&prefix_dir);
-    recv_total_path.push(RECV_TOTAL_FILENAME);
+    recv_total_path.push(opt.recv_total_filename);
     let recv_total_path = recv_total_path;
 
     let mut send_interval_path = PathBuf::new();
     send_interval_path.push(&prefix_dir);
-    send_interval_path.push(SEND_INTERVAL_FILENAME);
+    send_interval_path.push(opt.send_interval_filename);
     let send_interval_path = send_interval_path;
 
     let mut recv_interval_path = PathBuf::new();
     recv_interval_path.push(&prefix_dir);
-    recv_interval_path.push(RECV_INTERVAL_FILENAME);
+    recv_interval_path.push(opt.recv_interval_filename);
     let recv_interval_path = recv_interval_path;
 
     timer_execute(
