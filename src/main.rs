@@ -7,8 +7,6 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
-const INTERVAL_SECONDS: u64 = 5;
-
 const ALTERNATE_PREFIX_DIR: &str = "/tmp";
 
 const DEFAULT_SEND_TOTAL_FILENAME: &str = "rust_send_total";
@@ -76,6 +74,14 @@ struct Opt {
         default_value = DEFAULT_PID_FILENAME
     )]
     pid_filename: String,
+
+    #[structopt(
+        short = "v",
+        long = "interval-seconds",
+        help = "Interval in seconds between checking network rate",
+        default_value = "5"
+    )]
+    interval_seconds: u64,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -357,7 +363,7 @@ fn main() -> Result<(), String> {
                 &recv_total_path,
             )
         },
-        INTERVAL_SECONDS,
+        opt.interval_seconds,
     )?;
 
     Ok(())

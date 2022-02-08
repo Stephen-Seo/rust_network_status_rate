@@ -8,8 +8,9 @@ It simply reads from `/proc/net/dev` to obtain byte-counts of the specified
 network interface and writes to four files, two of which keep track of the total
 byte count for sending and receiving, and the other two contain the "diffs" for
 each (configurable) interval (by default 5 seconds).
-rust_network_status_rate 0.1.0
 
+    rust_network_status_rate 0.1.0
+    
     USAGE:
         rust_network_status_rate [FLAGS] [OPTIONS] <net-dev>
     
@@ -21,6 +22,8 @@ rust_network_status_rate 0.1.0
     
     OPTIONS:
         -p, --prefix <alternate-prefix-dir>             Prefix to use instead of XDG_RUNTIME_DIR if enabled [default: /tmp]
+        -v, --interval-seconds <interval-seconds>       Interval in seconds between checking network rate [default: 5]
+        -i, --pid-filename <pid-filename>               Filename to write pid to [default: rust_network_rate_pid]
         -r, --recv-interval <recv-interval-filename>
                 Filename of interval bytes recieved (in prefix dir) [default: rust_recv_interval]
     
@@ -35,4 +38,4 @@ rust_network_status_rate 0.1.0
     
     
     ARGS:
-        <net-dev>    
+        <net-dev>
