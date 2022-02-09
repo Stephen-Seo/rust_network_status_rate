@@ -20,7 +20,7 @@ const DEFAULT_PID_FILENAME: &str = "rust_network_rate_pid";
 struct Opt {
     net_dev: String,
     #[structopt(
-        short = "s",
+        short = "c",
         long = "disable-scaling",
         help = "Disables byte scaling into interval files"
     )]
@@ -284,15 +284,21 @@ fn timer_execute<F>(func: F, sleep_seconds: u64) -> Result<(), String>
 where
     F: std::ops::Fn() -> Result<(), String>,
 {
-    let mut instant = Instant::now() - Duration::from_secs(sleep_seconds);
-    let diff_duration = Duration::from_secs(sleep_seconds * 2);
-    let mut duration: Duration;
+    let mut instant = Instant::now();
+    let sleep_duration = Duration::from_secs(sleep_seconds);
+    let half_sleep_duration = sleep_duration / 2;
+    let double_sleep_duration = sleep_duration * 2;
     loop {
         func()?;
         let newer_instant = Instant::now();
-        duration = diff_duration - (newer_instant - instant);
+        let elapsed = newer_instant - instant;
+        // println!("{:?}", elapsed);
         instant = newer_instant;
-        sleep(duration);
+        if elapsed < half_sleep_duration {
+            sleep(sleep_duration);
+        } else {
+            sleep(double_sleep_duration - elapsed);
+        }
     }
 }
 
