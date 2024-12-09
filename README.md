@@ -1,5 +1,7 @@
 # Linux Traffic Rate in Rust
 
+[NOTICE: `swaybar_info` may be a better choice.](https://github.com/Stephen-Seo/swaybar_info)
+
 This program was used in conjunction with i3status to add network-rate-info to
 swaybar. The `const` variables at the top of `main.rs` can be configured for
 different use cases.
